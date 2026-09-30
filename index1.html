@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="التقييم السريري">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0b6b63">
+<title>سجل التقييم السريري</title>
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700&display=swap">
+<style>
+/* Layout: single column clinical clipboard, sticky header, tabbed home, drill-down student record */
+:root{
+  --bg:#f1f5f4; --surface:#ffffff; --surface-2:#e8efed; --ink:#15211f; --ink-2:#4d5d5a; --muted:#7f8e8b; --line:#d6e0de;
+  --accent:#0b6b63; --accent-ink:#ffffff; --accent-soft:#d9eeea; --accent-2:#0f8a7f;
+  --good:#1d7a42; --good-soft:#dcf1e3; --warn:#9a5c00; --warn-soft:#f8ead2; --bad:#b3261e; --bad-soft:#f8dedb; --info:#46587a; --info-soft:#e2e8f2;
+  --font-display:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --font-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --s1:#008a7c; --s2:#8a4bd6;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1413; --surface:#162020; --surface-2:#1d2a29; --ink:#e3ebe9; --ink-2:#a7b5b2; --muted:#6f7f7c; --line:#273533;
+  --accent:#4cbdb0; --accent-ink:#06201d; --accent-soft:#163430; --accent-2:#6fd3c6;
+  --good:#5cc486; --good-soft:#15301f; --warn:#e3a54a; --warn-soft:#33260f; --bad:#f07a70; --bad-soft:#3a1a18; --info:#9fb0d0; --info-soft:#1f2635; --s1:#26a497; --s2:#9a70ec;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1413; --surface:#162020; --surface-2:#1d2a29; --ink:#e3ebe9; --ink-2:#a7b5b2; --muted:#6f7f7c; --line:#273533;
+  --accent:#4cbdb0; --accent-ink:#06201d; --accent-soft:#163430; --accent-2:#6fd3c6;
+  --good:#5cc486; --good-soft:#15301f; --warn:#e3a54a; --warn-soft:#33260f; --bad:#f07a70; --bad-soft:#3a1a18; --info:#9fb0d0; --info-soft:#1f2635; --s1:#26a497; --s2:#9a70ec;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.55}
+#app{max-width:780px;margin:0 auto;padding:0 16px 48px}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.ltr{direction:ltr;unicode-bidi:isolate}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.top h1{font-size:19px;flex:1;min-width:0}
+.top .sub{display:block;font-family:var(--font-body);font-size:12.5px;font-weight:500;color:var(--muted)}
+.icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
+.icon-btn svg{width:20px;height:20px;stroke:var(--ink-2);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:12px;margin-block:14px;overflow-x:auto}
+.tabs button{flex:1;border:0;background:transparent;padding:9px 8px;border-radius:9px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad);border-color:color-mix(in oklab,var(--bad) 40%,var(--line))}
+.btn.danger.armed{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn.small{padding:6px 10px;font-size:13.5px}
+.btn.block{width:100%;padding:12px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+
+.search{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:13px;font-weight:600;color:var(--ink-2)}
+.field input,.field textarea,.field select{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);width:100%}
+.field textarea{min-height:90px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+
+.section{margin-top:26px}
+.section-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.section-h h2{font-size:16px}
+.section-h .meta{color:var(--muted);font-size:13px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.list > *+*{border-top:1px solid var(--line)}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;min-width:0}
+button.item{width:100%;border:0;background:transparent;text-align:start}
+button.item:hover{background:var(--surface-2)}
+.item .main{flex:1;min-width:0}
+.item .name{font-weight:600}
+.item .meta{color:var(--muted);font-size:13px}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;flex:none;font-family:var(--font-display);font-size:14px}
+
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.info{background:var(--info-soft);color:var(--info)}
+.pill.muted{background:var(--surface-2);color:var(--muted)}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:12px 14px}
+.stat .k{font-size:12.5px;color:var(--muted);font-weight:500}
+.stat .v{font-family:var(--font-display);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:13px;color:var(--muted);font-family:var(--font-body);font-weight:500}
+
+.progress{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);border-radius:99px}
+
+.empty{padding:30px 18px;text-align:center;color:var(--ink-2)}
+.empty h3{font-size:16px;margin-bottom:6px;color:var(--ink)}
+.empty p{margin:0 auto 14px;max-width:42ch;font-size:14px}
+
+/* Chart */
+.chart-wrap{position:relative;padding:12px 8px 6px}
+.chart-wrap svg{display:block;width:100%;height:220px;direction:ltr}
+.ch-grid{stroke:var(--line);stroke-width:1}
+.ch-axis{fill:var(--muted);font-size:11px;font-family:var(--font-body)}
+.ch-line{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ch-area{fill:var(--s1);opacity:.08}
+.ch-line.s2{stroke:var(--s2);stroke-dasharray:6 4}
+.ch-dot.s2{fill:var(--s2)}
+.ch-end.s2{fill:var(--ink-2)}
+.ch-legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 14px 0;font-size:13px;color:var(--ink-2)}
+.ch-legend span{display:inline-flex;align-items:center;gap:6px}
+.ch-legend i{width:18px;height:0;border-top:3px solid var(--s1);display:inline-block;border-radius:2px}
+.ch-legend i.s2{border-top:3px dashed var(--s2)}
+.dscale{flex-wrap:wrap}
+.dscale button{width:32px}
+.dscale button.zero{width:auto;padding:0 8px;font-size:12px;font-weight:600}
+.ch-dot{fill:var(--s1);stroke:var(--surface);stroke-width:2}
+.ch-end{fill:var(--ink);font-size:12px;font-weight:700;font-family:var(--font-body)}
+.ch-cross{stroke:var(--ink-2);stroke-width:1;stroke-dasharray:3 3}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:8px;font-size:12.5px;white-space:nowrap;transform:translate(-50%,-110%);z-index:3}
+
+.bars{display:flex;flex-direction:column;gap:7px;padding:14px}
+.bar-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 34px;gap:10px;align-items:center;font-size:13px}
+.bar-row .lbl{direction:ltr;text-align:left;color:var(--ink-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{height:10px;background:var(--surface-2);border-radius:4px;overflow:hidden;direction:ltr}
+.bar-fill{height:100%;background:var(--accent);border-radius:0 4px 4px 0}
+.bar-fill.low{background:var(--bad)}
+
+/* Evaluation form */
+.att{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px}
+.att button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 4px;font-weight:600;font-size:14px}
+.att button[aria-pressed="true"].present{background:var(--good);border-color:var(--good);color:#fff}
+.att button[aria-pressed="true"].late{background:var(--warn);border-color:var(--warn);color:#fff}
+.att button[aria-pressed="true"].absent{background:var(--bad);border-color:var(--bad);color:#fff}
+.att button[aria-pressed="true"].left{background:var(--s2);border-color:var(--s2);color:#fff}
+.pill.lft{background:color-mix(in oklab,var(--s2) 16%,var(--surface));color:var(--s2)}
+.att button[aria-pressed="true"].excused{background:var(--info);border-color:var(--info);color:#fff}
+.toggles{display:flex;flex-wrap:wrap;gap:8px}
+.tog{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-weight:600;font-size:14px;display:inline-flex;gap:6px;align-items:center}
+.tog[aria-pressed="true"]{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.crit-group h3{font-size:14px;color:var(--accent);padding:12px 14px 4px;font-family:var(--font-body);font-weight:700}
+.crit{padding:10px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;align-items:center}
+.crit+.crit{border-top:1px solid var(--line)}
+.crit .t{direction:ltr;text-align:left;font-size:14px;min-width:0}
+.crit .t b{color:var(--muted);font-weight:600;margin-right:6px;font-variant-numeric:tabular-nums}
+.scale{display:flex;gap:4px;direction:ltr}
+.scale button{width:38px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:8px;font-weight:700;font-variant-numeric:tabular-nums}
+.scale button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.crit.missing .t{color:var(--bad)}
+@media (max-width:560px){.crit{grid-template-columns:1fr}.scale{justify-content:flex-end}.scale button{flex:1;max-width:56px}}
+.legend-scale{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted);direction:ltr;justify-content:flex-end}
+.totalbar{position:sticky;bottom:0;background:var(--bg);padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+.totalbar .score{font-family:var(--font-display);font-size:20px;font-weight:700}
+.totalbar .score small{font-family:var(--font-body);font-size:13px;color:var(--muted);font-weight:500}
+
+/* Library */
+.lib-item{padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.check{width:28px;height:28px;border-radius:8px;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none;margin-top:2px}
+.check svg{width:16px;height:16px;stroke:#fff;stroke-width:3;fill:none;opacity:0}
+.check[aria-pressed="true"]{background:var(--good);border-color:var(--good)}
+.check[aria-pressed="true"] svg{opacity:1}
+.lib-item .desc{color:var(--ink-2);font-size:14px;white-space:pre-wrap;margin-top:4px}
+.lib-item .desc.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.drug-dl{margin:8px 0 0;display:grid;gap:2px}
+.drug-dl dt{font-size:12.5px;font-weight:700;color:var(--accent);margin-top:8px}
+.drug-dl dd{margin:0;color:var(--ink-2);font-size:14px;white-space:pre-wrap}
+a.link{text-decoration:none}
+.link{background:none;border:0;color:var(--accent);font-weight:600;padding:0;font-size:13px}
+
+/* Calendar */
+.cal-month{padding:12px}
+.cal-month h3{font-size:15px;margin:2px 4px 10px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{font-size:11.5px;color:var(--muted);text-align:center;font-weight:600;padding-bottom:2px}
+.cal-day{aspect-ratio:1/1;max-width:100%;border:0;border-radius:9px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;font-size:14px;color:var(--ink-2);position:relative;padding:0}
+.cal-day.out{visibility:hidden}
+.cal-day.s-done{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.cal-day.s-upcoming{background:var(--accent-soft);color:var(--accent);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cal-day.s-today{background:var(--warn);color:#fff;font-weight:700}
+.cal-day.s-cancelled{background:var(--surface-2);color:var(--muted);text-decoration:line-through}
+.cal-day.sel{outline:2px solid var(--ink);outline-offset:1px}
+.cal-day .dept{font-size:9.5px;font-weight:700;line-height:1;margin-top:2px;letter-spacing:.02em;opacity:.9}
+.cal-day .plus{position:absolute;top:1px;left:4px;font-size:11px;font-weight:800;line-height:1}
+.cal-day .dot{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:currentColor}
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2);margin-top:10px}
+.cal-legend span{display:inline-flex;align-items:center;gap:6px}
+.cal-legend i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.cal-months{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.wk{display:flex;flex-wrap:wrap;gap:6px}
+.chipday{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13.5px;font-weight:600}
+.chipday[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* Sheet */
+.scrim{position:fixed;inset:0;background:rgb(0 0 0 / .4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:92%;overflow:auto;display:flex;flex-direction:column;gap:14px}
+@media (min-width:640px){.scrim{align-items:center}.sheet{border-radius:16px}}
+.sheet h2{font-size:17px}
+
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.note-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;font-size:14px;color:var(--ink-2)}
+.hist-note{font-size:13px;color:var(--ink-2);margin-top:2px;white-space:pre-wrap}
+@media (prefers-reduced-motion:no-preference){.btn,.tog,.scale button,.check{transition:background .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<div id="app" dir="rtl" lang="ar"></div>
+<div id="sheetHost" dir="rtl" lang="ar"></div>
+<div id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ===== حط إعدادات Firebase تبعتك هون =====
+   Firebase console > Project settings > General > Your apps > Web app > SDK setup and configuration > Config */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBzfnTdWlpAKLs7uFSUSXNAIaQHGcgCQrw",
+  authDomain: "clinical-eval-86872.firebaseapp.com",
+  projectId: "clinical-eval-86872",
+  storageBucket: "clinical-eval-86872.firebasestorage.app",
+  messagingSenderId: "359308110479",
+  appId: "1:359308110479:web:dee3d408bf3c9632f69efa"
+};
+</script>
+<script>
+document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl';
+
+/* ---------- Evaluation criteria: the two university forms merged, duplicates removed ---------- */
+const CRITERIA = [
+  { g: 'المهارات السريرية', items: [
+    ['k1','Hand washing and use of PPE / precautionary measures'],
+    ['k2','Physical assessment'],
+    ['k3','Comprehends the information explained and the skills practiced'],
+    ['k4','Prioritizes nursing activities that reflect patient needs'],
+    ['k5','Provides care within an acceptable timeframe'],
+    ['k6','Follows up the case, carries out required tasks, shows knowledge of cases'],
+  ]},
+  { g: 'الالتزام والمظهر', items: [
+    ['k7','Punctuality, time commitment and preparedness'],
+    ['k8','Personal hygiene, professional appearance and dress code'],
+    ['k9','Adheres to university, faculty and hospital rules and policies'],
+    ['k10','Initiative, motivation and interest in care assignments'],
+    ['k11','Commitment to assignment deadlines'],
+  ]},
+  { g: 'التواصل والأخلاقيات', items: [
+    ['k12','Effective communication and collaboration with patients, colleagues and the inter-professional team'],
+    ['k13','Keeps patient and family informed; explains treatment and procedures'],
+    ['k14','Respect for oneself and others'],
+    ['k15','Accepts constructive criticism'],
+    ['k16','Seeks advice and assistance when unsure'],
+    ['k17','Honesty and integrity'],
+    ['k18','Maintains patient confidentiality'],
+    ['k19','Acknowledges ethical and legal issues in patient care'],
+    ['k20','Deals with stress and conflicts objectively without taking it out on others'],
+  ]},
+];
+const ALL_CRIT = CRITERIA.flatMap(g => g.items);
+const MAX = ALL_CRIT.length * 5;
+const CRIT_NUM = Object.fromEntries(ALL_CRIT.map((c, i) => [c[0], i + 1]));
+
+const DRUG_FIELDS = [
+  ['title', 'الدواء (الاسم التجاري)', 'text'],
+  ['generic', 'الاسم العلمي', 'text'],
+  ['moa', 'Mechanism of action', 'textarea'],
+  ['sides', 'الآثار الجانبية', 'textarea'],
+  ['use', 'الاستخدام', 'textarea'],
+  ['cautions', 'Cautions', 'textarea'],
+];
+const isScored = a => a === 'present' || a === 'late' || a === 'left';
+const ATT = {
+  present: { l: 'حاضر', c: 'good', icon: '✓' },
+  late:    { l: 'متأخر', c: 'warn', icon: '◷' },
+  absent:  { l: 'غائب', c: 'bad', icon: '✗' },
+  excused: { l: 'غياب بعذر', c: 'info', icon: '•' },
+  left:    { l: 'غادر أثناء الدوام', c: 'lft', icon: '↦' },
+};
+const DOW = [ [6,'السبت'],[0,'الأحد'],[1,'الإثنين'],[2,'الثلاثاء'],[3,'الأربعاء'],[4,'الخميس'],[5,'الجمعة'] ];
+const DOW_NAME = Object.fromEntries(DOW);
+const DEFAULT_SETTINGS = {
+  instructor: '', setting: '', course: 'Medical Surgical Nursing',
+  requiredDocs: [],
+  dailyItems: ['Nursing Note', 'Hand Over'],
+  searchHistory: { topics: [], drugs: [] }, semStart: '', weeks: 18, shiftStart: '07:00', shiftEnd: '14:00', dayHours: {}, cancelNotes: {}, dayDept: {}, deptAssign: {}, departments: ['ICU', 'CCU', 'MW', 'SU', 'ER', 'OR', 'RW'], clinicalDays: [6], cancelled: [], extraDays: [],
+};
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d, 12); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+const today = () => iso(new Date());
+const dayName = s => DOW_NAME[parse(s).getDay()];
+const shortDate = s => { const d = parse(s); return `${d.getDate()}/${d.getMonth() + 1}`; };
+const longDate = s => `${dayName(s)} ${shortDate(s)}`;
+const monthName = (y, m) => new Intl.DateTimeFormat('ar-u-nu-latn', { month: 'long', year: 'numeric' }).format(new Date(y, m, 15));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const initials = n => (n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('');
+const reqDocs = () => (st.settings.requiredDocs || []).map(d => typeof d === 'string' ? { name: d, max: null } : d);
+const docOf = (s, name) => { const v = s?.docs?.[name]; return v == null ? null : typeof v === 'string' ? { date: v, score: null } : v; };
+const fmtN = n => (Math.round(n * 100) / 100).toString();
+const DMAX = 10;
+const dScore = (e, it) => { const v = e?.daily?.[it]; const k = e?.dailyMax === DMAX ? 1 : DMAX / 5; return v === true ? DMAX : v === false ? 0 : typeof v === 'number' ? v * k : null; };
+function dailyPct(e) { const items = st.settings.dailyItems || []; const v = items.map(it => dScore(e, it)).filter(n => n != null); return v.length ? { sum: v.reduce((a, b) => a + b, 0), max: v.length * DMAX, pct: v.reduce((a, b) => a + b, 0) / (v.length * DMAX) * 100 } : null; }
+const pctOf = e => typeof e.pct === 'number' ? e.pct : null;
+const ICON = {
+  back: '<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  xls: '<svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L19 7"/></svg>',
+  edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+};
+
+/* ---------- State ---------- */
+const st = {
+  ready: false, loaded: 0, err: null, dl: null,
+  view: 'home', tab: 'students', sid: null, q: '', libQ: '',
+  settings: { ...DEFAULT_SETTINGS }, students: {}, evals: {}, topics: {}, drugs: {},
+  draft: null, confirm: null, needLogin: false, userEmail: '', login: { mode: 'login', email: '', msg: '', ok: false, busy: false }, open: new Set(), calSel: null, showMissing: false,
+};
+let refs = null;
+
+/* ---------- Writes (one at a time per document) ---------- */
+const chains = {};
+function write(ref, data) {
+  const k = ref.path;
+  const p = (chains[k] || Promise.resolve()).then(() => data === null ? ref.delete() : ref.set(data));
+  chains[k] = p.catch(() => {});
+  return p.catch(e => { toast(errText(e)); throw e; });
+}
+function errText(e) {
+  if (e && e.code === 'quota_exceeded') return 'امتلأت مساحة التخزين. احذف بيانات قديمة ثم حاول مرة ثانية.';
+  if (e && e.code === 'permission-denied') return 'Firebase رفض الحفظ. تأكد إنك مسجل دخول ومن قواعد Firestore.';
+  return 'صار خطأ بالحفظ. حاول مرة ثانية.';
+}
+const saveSettings = patch => { st.settings = { ...st.settings, ...patch }; render(); return write(refs.root, st.settings); };
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2800); }
+
+/* ---------- Derived data ---------- */
+function evalsOf(sid) { return Object.values(st.evals).filter(e => e.sid === sid).sort((a, b) => a.date.localeCompare(b.date)); }
+function studentStats(sid) {
+  const ev = evalsOf(sid);
+  const scored = ev.filter(e => pctOf(e) != null);
+  const avg = scored.length ? scored.reduce((s, e) => s + e.pct, 0) / scored.length : null;
+  const cnt = { present: 0, late: 0, left: 0, absent: 0, excused: 0 };
+  ev.forEach(e => cnt[e.att] = (cnt[e.att] || 0) + 1);
+  const stu = st.students[sid]; const rd = reqDocs();
+  const docsDone = rd.filter(d => docOf(stu, d.name)).length;
+  let docScore = 0, docMax = 0, docGraded = 0;
+  rd.forEach(d => { const v = docOf(stu, d.name); if (d.max) docMax += Number(d.max); if (v && typeof v.score === 'number') { docScore += v.score; docGraded++; } });
+  const dv = scored.map(dailyPct).filter(Boolean); const dAvg = dv.length ? dv.reduce((a, b) => a + b.pct, 0) / dv.length : null;
+  return { dAvg, ev, scored, avg, cnt, docsDone, docScore, docMax, docGraded, last: scored[scored.length - 1] };
+}
+function schedule() {
+  const s = st.settings; if (!s.semStart) return [];
+  const days = new Set(s.clinicalDays || []); const out = [];
+  for (let i = 0; i < (s.weeks || 0) * 7; i++) { const d = addDays(s.semStart, i); if (days.has(parse(d).getDay())) out.push(d); }
+  (s.extraDays || []).forEach(d => { if (!out.includes(d)) out.push(d); });
+  return out.sort();
+}
+function weekOf(d) { const s = st.settings.semStart; if (!s) return null; return Math.floor((parse(d) - parse(s)) / 864e5 / 7) + 1; }
+function evalDates() { const m = {}; Object.values(st.evals).forEach(e => { m[e.date] = (m[e.date] || 0) + 1; }); return m; }
+function dayStatus(d, sched, evd) {
+  const cancelled = (st.settings.cancelled || []).includes(d);
+  const isSched = sched.includes(d) || !!evd[d];
+  if (!isSched) return null;
+  if (cancelled) return 'cancelled';
+  const t = today();
+  if (d === t) return 'today';
+  return d < t ? 'done' : 'upcoming';
+}
+const toMin = t => { const [h, m] = String(t || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+const span = (a, b) => { let d = toMin(b) - toMin(a); if (d <= 0) d += 1440; return d / 60; };
+const fmtH = h => { const hh = Math.floor(h + 1e-9), mm = Math.round((h - hh) * 60); return mm ? `${hh}:${pad(mm)}` : `${hh}`; };
+const fmtT = t => { const [h, m] = String(t).split(':').map(Number); const ap = h < 12 ? 'ص' : 'م'; const h12 = h % 12 || 12; return `${h12}:${pad(m || 0)} ${ap}`; };
+const eqDays = h => { const dh = span(st.settings.shiftStart, st.settings.shiftEnd); return dh ? h / dh : 0; };
+const fmtD = n => { const r = Math.round(n * 10) / 10; return Number.isInteger(r) ? String(r) : r.toFixed(1); };
+const deptOf = d => (st.settings.dayDept || {})[d] || '';
+const deptFor = (sid, d) => ((st.settings.deptAssign || {})[d] || {})[sid] || deptOf(d);
+function deptsOfDay(d) { const set = new Set(); const ids = Object.keys(st.students); ids.forEach(id => { const x = deptFor(id, d); if (x) set.add(x); }); if (!ids.length && deptOf(d)) set.add(deptOf(d)); return [...set]; }
+function deptCounts(d) { const c = {}; Object.keys(st.students).forEach(id => { const x = deptFor(id, d) || 'بدون قسم'; c[x] = (c[x] || 0) + 1; }); return c; }
+function setStudentDept(d, sid, dp) { const all = { ...(st.settings.deptAssign || {}) }; const day = { ...(all[d] || {}) };
+  if (!dp || dp === deptOf(d)) delete day[sid]; else day[sid] = dp;
+  if (Object.keys(day).length) all[d] = day; else delete all[d]; return saveSettings({ deptAssign: all }); }
+const defHours = () => span(st.settings.shiftStart, st.settings.shiftEnd);
+const dayTimes = d => { const o = (st.settings.dayHours || {})[d]; return o ? { start: o.start, end: o.end, custom: true } : { start: st.settings.shiftStart, end: st.settings.shiftEnd, custom: false }; };
+const dayH = d => (st.settings.cancelled || []).includes(d) ? 0 : (() => { const x = dayTimes(d); return span(x.start, x.end); })();
+function calSummary() {
+  const sched = schedule(), evd = evalDates(), t = today();
+  const cancelled = st.settings.cancelled || [], extras = st.settings.extraDays || [];
+  const active = sched.filter(d => !cancelled.includes(d));
+  const done = active.filter(d => d < t).length;
+  const next = active.find(d => d >= t) || null;
+  const original = sched.filter(d => !extras.includes(d)).length;
+  const reqH = original * defHours();
+  const planH = active.reduce((a, d) => a + dayH(d), 0);
+  const doneH = active.filter(d => d < t).reduce((a, d) => a + dayH(d), 0);
+  return { sched, evd, total: active.length, done, left: active.length - done, next, reqH, planH, doneH, gapH: reqH - planH };
+}
+
+/* ---------- Render ---------- */
+function render() {
+  const a = document.activeElement; const fid = a && a.id; let s1, s2;
+  try { s1 = a.selectionStart; s2 = a.selectionEnd; } catch (_) {}
+  const app = $('#app');
+  if (st.err) app.innerHTML = headerHTML('سجل التقييم السريري') + `<div class="empty section"><h3>ما قدرنا نفتح البيانات</h3><p>${esc(st.err)}</p></div>`;
+  else if (st.needLogin) app.innerHTML = loginView();
+  else if (!st.ready) app.innerHTML = headerHTML('سجل التقييم السريري') + `<div class="empty section"><p>جارٍ تحميل بيانات الطلاب…</p></div>`;
+  else if (st.view === 'student' && st.students[st.sid]) app.innerHTML = studentView();
+  else if (st.view === 'eval' && st.draft) app.innerHTML = evalView();
+  else if (st.view === 'settings') app.innerHTML = settingsView();
+  else { st.view = 'home'; app.innerHTML = homeView(); }
+  if (fid) { const n = document.getElementById(fid); if (n && n !== document.activeElement) { n.focus({ preventScroll: true }); try { n.setSelectionRange(s1, s2); } catch (_) {} } }
+  drawChart();
+}
+
+function headerHTML(title, sub, opts = {}) {
+  return `<header class="top">
+    ${opts.back ? `<button class="icon-btn" data-act="back" aria-label="رجوع">${ICON.back}</button>` : ''}
+    <h1>${esc(title)}${sub ? `<span class="sub">${sub}</span>` : ''}</h1>
+    ${opts.home ? `<button class="icon-btn" data-act="export-all" aria-label="تصدير Excel" title="تصدير Excel">${ICON.xls}</button>
+    <button class="icon-btn" data-act="settings" aria-label="الإعدادات" title="الإعدادات">${ICON.gear}</button>` : ''}
+    ${opts.extra || ''}
+  </header>`;
+}
+
+function homeView() {
+  const s = st.settings; const ids = Object.keys(st.students);
+  const evToday = new Set(Object.values(st.evals).filter(e => e.date === today()).map(e => e.sid));
+  const cs = calSummary();
+  let sub = [s.course, s.setting].filter(Boolean).map(esc).join(' · ');
+  const tabs = [['students', 'الطلاب'], ['calendar', 'الدوام'], ['topics', 'المواضيع'], ['drugs', 'الأدوية']];
+  let body = '';
+  if (st.tab === 'students') body = studentsTab(ids, evToday, cs);
+  else if (st.tab === 'calendar') body = calendarTab(cs);
+  else body = libraryTab(st.tab);
+  return headerHTML('سجل التقييم السريري', sub, { home: true }) +
+    `<nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab:${k}" aria-pressed="${st.tab === k}">${l}</button>`).join('')}</nav>` + body;
+}
+
+function studentsTab(ids, evToday, cs) {
+  const q = st.q.trim().toLowerCase();
+  const list = ids.map(id => st.students[id]).filter(s => !q || (s.name || '').toLowerCase().includes(q) || (s.bu || '').includes(q))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+  const nextLine = cs.next ? (cs.next === today() ? 'اليوم يوم دوام' : `الدوام القادم: ${longDate(cs.next)}`) : '';
+  const head = `<div class="panel" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+      <div class="row"><strong>اليوم ${esc(longDate(today()))}</strong><span class="spacer"></span>
+      <span class="pill ${evToday.size && evToday.size === ids.length ? 'good' : 'muted'} num">قيّمت ${evToday.size} من ${ids.length}</span></div>
+      ${ids.length ? `<div class="progress"><i style="width:${ids.length ? evToday.size / ids.length * 100 : 0}%"></i></div>` : ''}
+      ${nextLine ? `<div class="meta" style="color:var(--ink-2);font-size:13.5px">${esc(nextLine)}${cs.total ? ` · <span class="num">داومنا ${cs.done} يوم${Math.abs(eqDays(cs.doneH) - cs.done) > 0.05 ? ` (بالساعات ${fmtD(eqDays(cs.doneH))})` : ''} من ${cs.total}</span>` : ''}</div>` : ''}
+    </div>`;
+  if (!ids.length) return head + `<div class="section list"><div class="empty"><h3>ما في طلاب بعد</h3><p>أضف طلاب هاد الفصل، وبعدها اضغط على اسم أي طالب عشان تقيّمه يومياً وتشوف تطوره.</p><button class="btn primary" data-act="add-student">+ إضافة طالب</button></div></div>`;
+  const rows = list.map(s => {
+    const x = studentStats(s.id); const done = evToday.has(s.id);
+    return `<button class="item" data-act="open-student:${s.id}">
+      <span class="avatar">${esc(initials(s.name))}</span>
+      <span class="main"><span class="name">${esc(s.name)}</span><br><span class="meta num">${s.bu ? esc(s.bu) + ' · ' : ''}المتوسط ${x.avg != null ? Math.round(x.avg) + '%' : '—'} · الأوراق ${x.docsDone}/${reqDocs().length}${x.docGraded ? ' · علامتها ' + fmtN(x.docScore) + '/' + fmtN(x.docMax) : ''}</span></span>
+      <span class="pill ${done ? 'good' : 'muted'}">${done ? '✓ تم اليوم' : 'لم يُقيّم'}</span>
+    </button>`;
+  }).join('');
+  return head + `<div class="section"><div class="row" style="margin-bottom:10px"><input id="q" class="search" style="flex:1;min-width:0" placeholder="ابحث بالاسم أو الرقم الجامعي" value="${esc(st.q)}" data-bind="q"><button class="btn primary" data-act="add-student">+ طالب</button></div>
+    <div class="list">${rows || '<div class="empty"><p>ما في نتائج للبحث.</p></div>'}</div></div>`;
+}
+
+/* ---------- Calendar tab ---------- */
+function calendarTab(cs) {
+  const s = st.settings;
+  const setup = `<div class="panel" style="padding:14px;display:flex;flex-direction:column;gap:12px">
+    <div class="grid2">
+      <div class="field"><label for="semStart">أول أسبوع بالفصل (تاريخ البداية)</label><input id="semStart" type="date" value="${esc(s.semStart)}" data-change="semStart"></div>
+      <div class="field"><label for="weeks">عدد الأسابيع</label><input id="weeks" type="number" min="1" max="30" value="${esc(s.weeks)}" data-change="weeks" class="num"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="shiftStart">بداية الشفت العادي</label><input id="shiftStart" type="time" value="${esc(s.shiftStart)}" data-change="shiftStart"></div>
+      <div class="field"><label for="shiftEnd">نهاية الشفت العادي</label><input id="shiftEnd" type="time" value="${esc(s.shiftEnd)}" data-change="shiftEnd"></div>
+    </div>
+    <div class="meta num" style="font-size:13px;color:var(--ink-2)">اليوم العادي = ${fmtH(defHours())} ساعات</div>
+    <div class="field"><label>أيام الدوام بالأسبوع</label><div class="wk">${DOW.map(([n, l]) => `<button class="chipday" data-act="dow:${n}" aria-pressed="${(s.clinicalDays || []).includes(n)}">${l}</button>`).join('')}</div></div>
+  </div>`;
+  if (!s.semStart) return `<div class="section-h"><h2>جدول الدوام</h2></div>` + setup + `<div class="empty"><p>اختار تاريخ بداية الفصل وأيام الدوام، وبيطلعلك كاليندر فيه كل أيام الدوام اللي داومتوها واللي جاية.</p></div>`;
+  const { sched, evd, total, done, left, next, reqH, planH, doneH, gapH } = cs;
+  const origDays = sched.filter(d => !(s.extraDays || []).includes(d)).length;
+  const stats = `<div class="stats"><div class="stat"><div class="k">داومنا فعلياً</div><div class="v">${done}<small> يوم</small></div></div>
+    <div class="stat"><div class="k">بالساعات بتعادل</div><div class="v" style="color:${eqDays(doneH) > done + 0.05 ? 'var(--good)' : 'inherit'}">${fmtD(eqDays(doneH))}<small> يوم</small></div></div>
+    <div class="stat"><div class="k">المطلوب بالفصل</div><div class="v">${origDays}<small> يوم</small></div></div></div>
+    <div class="section-h" style="margin-top:18px"><h2>الساعات</h2></div>
+    <div class="stats"><div class="stat"><div class="k">المطلوب بالفصل</div><div class="v">${fmtH(reqH)}<small> ساعة</small></div></div>
+    <div class="stat"><div class="k">داومنا</div><div class="v">${fmtH(doneH)}<small> ساعة</small></div></div>
+    <div class="stat"><div class="k">باقي بالجدول</div><div class="v">${fmtH(Math.max(0, planH - doneH))}<small> ساعة</small></div></div></div>
+    <div class="panel" style="padding:10px 14px;margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      ${gapH > 0.01 ? `<span class="pill bad num">ناقص ${fmtH(gapH)} ساعة (≈ ${fmtD(eqDays(gapH))} يوم) لازم تتعوض</span><span style="font-size:13.5px;color:var(--ink-2)">اضغط على يوم وزيد ساعاته (يوم لونق)، أو ضيف يوم تعويضي.</span>`
+        : gapH < -0.01 ? `<span class="pill good num">معوّض، وزيادة ${fmtH(-gapH)} ساعة (≈ ${fmtD(eqDays(-gapH))} يوم)</span>` : `<span class="pill good">الساعات مكتملة بالجدول</span>`}
+    </div>`;
+  // months
+  const first = parse(s.semStart); const lastD = parse(addDays(s.semStart, s.weeks * 7 - 1));
+  const extraEnd = sched.length ? parse(sched[sched.length - 1]) : lastD; const end = extraEnd > lastD ? extraEnd : lastD;
+  const months = []; let y = first.getFullYear(), m = first.getMonth();
+  while (y < end.getFullYear() || (y === end.getFullYear() && m <= end.getMonth())) { months.push([y, m]); m++; if (m > 11) { m = 0; y++; } }
+  const t = today();
+  const monthHTML = months.map(([y, m]) => {
+    const firstDay = new Date(y, m, 1, 12); const offset = (firstDay.getDay() + 1) % 7; const nDays = new Date(y, m + 1, 0).getDate();
+    let cells = ['سبت','أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة'].map(l => `<div class="cal-dow">${l}</div>`).join('');
+    for (let i = 0; i < offset; i++) cells += `<span class="cal-day out"></span>`;
+    for (let d = 1; d <= nDays; d++) {
+      const ds = `${y}-${pad(m + 1)}-${pad(d)}`; const stt = dayStatus(ds, sched, evd);
+      const cls = ['cal-day', stt ? 's-' + stt : '', st.calSel === ds ? 'sel' : ''].join(' ');
+      const lab = stt ? ({ done: 'داومنا', upcoming: 'دوام قادم', today: 'اليوم دوام', cancelled: 'ملغى' })[stt] : '';
+      const longD = stt && stt !== 'cancelled' && dayH(ds) > defHours() + 0.01;
+      cells += `<button class="${cls}" data-act="cal:${ds}" aria-label="${ds} ${lab}${longD ? ' يوم لونق' : ''}">${d}${stt && stt !== 'cancelled' && deptsOfDay(ds).length ? `<span class="dept">${deptsOfDay(ds).length > 2 ? deptsOfDay(ds).length + ' أقسام' : esc(deptsOfDay(ds).join('/'))}</span>` : ''}${longD ? '<span class="plus">+</span>' : ''}${ds === t && !stt ? '<span class="dot"></span>' : ''}</button>`;
+    }
+    return `<div class="panel cal-month"><h3>${monthName(y, m)}</h3><div class="cal-grid">${cells}</div></div>`;
+  }).join('');
+  const legend = `<div class="cal-legend"><span><i style="background:var(--accent)"></i>داومنا</span><span><i style="background:var(--warn)"></i>اليوم</span><span><i style="background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)"></i>دوام قادم</span><span><i style="background:var(--surface-2)"></i>ملغى / عطلة</span><span><b>+</b> يوم لونق (ساعات أكثر)</span></div>`;
+  // selected day panel
+  let dayPanel = '';
+  if (st.calSel) {
+    const d = st.calSel; const stt = dayStatus(d, sched, evd); const wk = weekOf(d);
+    const isExtra = (s.extraDays || []).includes(d); const inSched = sched.includes(d);
+    const n = evd[d] || 0; const nStud = Object.keys(st.students).length;
+    const pill = stt ? `<span class="pill ${({ done: 'accent', upcoming: 'info', today: 'warn', cancelled: 'muted' })[stt]}">${({ done: 'داومنا', upcoming: 'دوام قادم', today: 'اليوم', cancelled: 'ملغى' })[stt]}</span>` : '<span class="pill muted">مش يوم دوام</span>';
+    const btns = [];
+    if (inSched && stt !== 'cancelled') btns.push(`<button class="btn small" data-act="cal-cancel:${d}">إلغاء هاليوم (عطلة)</button>`);
+    if (stt === 'cancelled') btns.push(`<button class="btn small" data-act="cal-cancel:${d}">إرجاع كيوم دوام</button>`);
+    if (isExtra) btns.push(`<button class="btn small danger" data-act="cal-extra:${d}">شيل اليوم التعويضي</button>`);
+    if (!inSched) btns.push(`<button class="btn small" data-act="cal-extra:${d}">+ إضافة كيوم دوام تعويضي</button>`);
+    dayPanel = `<div class="panel" style="padding:14px;margin-top:12px;display:flex;flex-direction:column;gap:10px">
+      <div class="row"><strong>${esc(longDate(d))}</strong>${wk && wk > 0 && wk <= s.weeks ? `<span class="meta num" style="color:var(--muted);font-size:13px">الأسبوع ${wk} من ${s.weeks}</span>` : ''}<span class="spacer"></span>${pill}</div>
+      ${(stt && stt !== 'cancelled') ? (() => { const tm = dayTimes(d); const h = dayH(d); const diff = h - defHours();
+        return `<div class="row" style="gap:10px;align-items:flex-end">
+          <div class="field" style="flex:1;min-width:120px"><label for="dayStart">من</label><input id="dayStart" type="time" value="${esc(tm.start)}" data-change="dayStart" data-d="${d}"></div>
+          <div class="field" style="flex:1;min-width:120px"><label for="dayEnd">لـ</label><input id="dayEnd" type="time" value="${esc(tm.end)}" data-change="dayEnd" data-d="${d}"></div></div>
+          <div class="row" style="gap:8px"><span class="pill ${diff > 0.01 ? 'good' : diff < -0.01 ? 'warn' : 'muted'} num">${fmtH(h)} ساعة${diff > 0.01 ? ` · +${fmtH(diff)} تعويض` : diff < -0.01 ? ` · أقل بـ ${fmtH(-diff)}` : ' · يوم عادي'}</span>
+          ${tm.custom ? `<button class="link" data-act="day-reset:${d}">رجّعه للدوام العادي</button>` : ''}
+          <button class="link" data-act="day-long:${d}">يوم لونق (لـ 7:00 م)</button></div>`; })() : ''}
+      ${(stt && stt !== 'cancelled') ? `<div class="field"><label>قسم كل الطلاب</label><div class="wk">${(s.departments || []).map(dp => `<button class="chipday" data-act="dept:${d}:${esc(dp)}" aria-pressed="${deptOf(d) === dp}">${esc(dp)}</button>`).join('')}</div></div>
+      ${Object.keys(st.students).length ? (() => { const cnt = deptCounts(d); const open = st.distOpen === d;
+        return `<div class="field"><div class="row"><label>توزيع الطلاب على الأقسام</label><span class="spacer"></span><button class="link" data-act="dist:${d}">${open ? 'إخفاء' : 'وزّع الطلاب'}</button></div>
+        <div class="row" style="gap:6px">${Object.entries(cnt).map(([k, v]) => `<span class="pill ${k === 'بدون قسم' ? 'muted' : 'accent'} num">${esc(k)}: ${v}</span>`).join('')}</div>
+        ${open ? `<div class="list" style="margin-top:6px">${Object.values(st.students).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar')).map(stu => `<div class="item" style="flex-wrap:wrap;gap:8px"><span class="main" style="min-width:110px;font-weight:600">${esc(stu.name)}</span>
+          <span class="wk">${(s.departments || []).map(dp => `<button class="chipday" style="padding:4px 9px;font-size:12.5px" data-act="sdept:${d}:${stu.id}:${esc(dp)}" aria-pressed="${deptFor(stu.id, d) === dp}">${esc(dp)}</button>`).join('')}</span></div>`).join('')}</div>` : ''}</div>`; })() : ''}` : ''}
+      ${stt === 'cancelled' ? `<div class="field"><label for="cancelNote">سبب الإلغاء / ملاحظة</label><input id="cancelNote" dir="auto" value="${esc((s.cancelNotes || {})[d] || '')}" data-change="cancelNote" data-d="${d}" placeholder="مثلاً: عطلة رسمية، إضراب، امتحانات…"></div>` : ''}
+      ${n ? `<div class="meta num" style="color:var(--ink-2);font-size:13.5px">تقييمات هاليوم: ${n} من ${nStud} طالب</div>` : ''}
+      <div class="row">${btns.join('')}</div></div>`;
+  }
+  // weeks list
+  const byWeek = {};
+  sched.forEach(d => { const w = weekOf(d); (byWeek[w] = byWeek[w] || []).push(d); });
+  const weekRows = Object.keys(byWeek).map(Number).sort((a, b) => a - b).map(w => {
+    const chips = byWeek[w].map(d => { const stt = dayStatus(d, sched, evd); const c = ({ done: 'accent', upcoming: 'info', today: 'warn', cancelled: 'muted' })[stt] || 'muted';
+      const cust = stt !== 'cancelled' && dayTimes(d).custom;
+      return `<span class="pill ${c}">${esc(longDate(d))}${stt !== 'cancelled' && deptsOfDay(d).length ? ' · ' + esc(deptsOfDay(d).join('/')) : ''}${stt === 'cancelled' ? ' · ملغى' + ((s.cancelNotes || {})[d] ? ': ' + esc(s.cancelNotes[d]) : '') : ''}${cust ? ` · <span class="num">${fmtH(dayH(d))} س</span>` : ''}${stt === 'done' && evd[d] ? ' ✓' : ''}</span>`; }).join(' ');
+    return `<div class="item"><span class="num" style="width:62px;flex:none;font-weight:600;color:var(--ink-2)">أسبوع ${w}</span><span class="main row" style="gap:6px">${chips}</span></div>`;
+  }).join('');
+  return stats + `<div class="section"><div class="section-h"><h2>الكاليندر</h2><span class="meta">اضغط على أي يوم لتعدّله</span></div>
+    <div class="cal-months">${monthHTML}</div>${legend}${dayPanel}</div>
+    <div class="section"><div class="section-h"><h2>الأسابيع</h2><span class="meta num">${total} يوم دوام</span></div><div class="list">${weekRows}</div></div>
+    <div class="section"><div class="section-h"><h2>إعداد الجدول</h2></div>${setup}</div>`;
+}
+
+/* ---------- Library ---------- */
+function libraryTab(kind) {
+  const col = kind === 'topics' ? st.topics : st.drugs;
+  const label = kind === 'topics' ? 'موضوع' : 'دواء';
+  const items = Object.values(col).sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ar'));
+  const done = items.filter(i => i.done).length;
+  const q = st.libQ.trim().toLowerCase();
+  const shown = items.filter(i => !q || [i.title, i.cls, i.desc, i.generic, i.moa, i.sides, i.use, i.cautions].join(' ').toLowerCase().includes(q));
+  const head = `<div class="panel" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+    <div class="row"><strong>${kind === 'topics' ? 'المواضيع اللي بتشرحها' : 'الأدوية اللي بتشرحها'}</strong><span class="spacer"></span><span class="pill ${items.length && done === items.length ? 'good' : 'accent'} num">شرحنا ${done} من ${items.length}</span></div>
+    ${items.length ? `<div class="progress"><i style="width:${done / items.length * 100}%"></i></div>` : ''}
+    <div class="meta" style="font-size:12.5px;color:var(--muted)">هاي القائمة بتضل محفوظة من فصل لفصل. بس علامات "شرحناه" بترجع فاضية لما تبلش فصل جديد.</div></div>`;
+  if (!items.length) return head + `<div class="section list"><div class="empty"><h3>القائمة فاضية</h3><p>${kind === 'topics' ? 'أضف أسماء المواضيع اللي بتعطيها للطلاب، ولكل موضوع بتقدر تحط رابط ملفه على Google Drive.' : 'أضف الأدوية اللي بتشرحها: الاسم العلمي، الـ Mechanism of action، الآثار الجانبية، الاستخدام، والـ Cautions.'}</p><button class="btn primary" data-act="add-${kind}">+ إضافة ${label}</button></div></div>`;
+  const rows = shown.map(i => {
+    const open = st.open.has(i.id);
+    const drugParts = kind === 'drugs' ? DRUG_FIELDS.slice(2).filter(([k]) => i[k]) : [];
+    const long = kind === 'drugs' ? drugParts.length > 0 : false;
+    return `<div class="lib-item">
+      <button class="check" data-act="toggle-lib:${kind}:${i.id}" aria-pressed="${!!i.done}" aria-label="شرحناه">${ICON.check}</button>
+      <div class="main" style="flex:1;min-width:0">
+        <div class="row" style="gap:8px"><span class="name" style="font-weight:600">${esc(i.title)}</span>${i.generic ? `<span class="pill accent ltr">${esc(i.generic)}</span>` : ''}${i.cls ? `<span class="pill muted">${esc(i.cls)}</span>` : ''}${i.done ? `<span class="pill good num">شرحناه ${esc(shortDate(i.doneDate))}</span>` : ''}</div>
+        ${kind === 'drugs' ? (open ? `<dl class="drug-dl">${drugParts.map(([k, l]) => `<dt>${esc(l)}</dt><dd>${esc(i[k])}</dd>`).join('')}${i.desc ? `<dt>ملاحظات</dt><dd>${esc(i.desc)}</dd>` : ''}</dl>`
+          : (i.use ? `<div class="desc clamp">${esc(i.use)}</div>` : i.desc ? `<div class="desc clamp">${esc(i.desc)}</div>` : ''))
+          : ''}
+        <div class="row" style="gap:14px;margin-top:6px">${long ? `<button class="link" data-act="expand:${i.id}">${open ? 'أقل' : kind === 'drugs' ? 'عرض التفاصيل' : 'اقرأ الكل'}</button>` : ''}${kind === 'topics' && i.link && /^https:\/\//i.test(i.link) ? `<a class="link" href="${esc(i.link)}" target="_blank" rel="noopener">📄 فتح الملف</a>` : ''}<button class="link" data-act="edit-${kind}:${i.id}">${kind === 'topics' && !i.link ? 'تعديل / إضافة رابط ملف' : 'تعديل'}</button></div>
+      </div></div>`;
+  }).join('');
+  return head + `<div class="section"><div class="row" style="margin-bottom:10px"><input id="libq" class="search" style="flex:1;min-width:0" placeholder="${kind === 'drugs' ? '🔍 ابحث عن دواء بالاسم التجاري أو العلمي' : '🔍 ابحث عن موضوع'}" value="${esc(st.libQ)}" data-bind="libQ"><button class="btn primary" data-act="add-${kind}">+ ${label}</button></div>
+    ${histHTML(kind)}
+    <div class="list">${rows || '<div class="empty"><p>ما في نتائج للبحث.</p></div>'}</div></div>`;
+}
+function histHTML(kind) {
+  const h = (st.settings.searchHistory || {})[kind] || [];
+  if (!h.length) return '';
+  return `<div class="row" style="gap:6px;margin:-2px 0 10px"><span class="meta" style="font-size:12.5px;color:var(--muted)">بحثت مؤخراً:</span>
+    ${h.map((t, i) => `<button class="chipday" dir="auto" data-act="hist:${kind}:${i}" aria-pressed="${st.libQ.trim() === t}">${esc(t)}</button>`).join('')}
+    <button class="link" data-act="hist-clear:${kind}">مسح السجل</button></div>`;
+}
+function addHistory(kind, q) {
+  q = q.trim(); if (q.length < 2) return;
+  const all = { topics: [], drugs: [], ...(st.settings.searchHistory || {}) };
+  const cur = all[kind] || [];
+  if (cur[0] === q) return;
+  const next = [q, ...cur.filter(t => t !== q && !q.startsWith(t))].slice(0, 10);
+  saveSettings({ searchHistory: { ...all, [kind]: next } });
+}
+let histT;
+
+/* ---------- Student view ---------- */
+function studentView() {
+  const s = st.students[st.sid]; const x = studentStats(s.id); const set = st.settings;
+  const total = x.ev.length;
+  const attended = x.cnt.present + x.cnt.late + x.cnt.left;
+  const evToday = st.evals[s.id + '_' + today()];
+  const stats = `<div class="stats">
+    <div class="stat"><div class="k">متوسط التقييم</div><div class="v">${x.avg != null ? Math.round(x.avg) + '<small>%</small>' : '—'}</div></div>
+    <div class="stat"><div class="k">الحضور</div><div class="v">${attended}<small>/${total} يوم</small></div></div>
+    <div class="stat"><div class="k">آخر تقييم</div><div class="v">${x.last ? Math.round(x.last.pct) + '<small>%</small>' : '—'}</div></div></div>`;
+  const attPills = Object.entries(ATT).filter(([k]) => x.cnt[k]).map(([k, a]) => `<span class="pill ${a.c}">${a.icon} ${a.l} <span class="num">${x.cnt[k]}</span></span>`).join(' ');
+  const chart = `<div class="section"><div class="section-h"><h2>التقييم اليومي</h2><span class="meta">كنسبة مئوية</span></div>
+    <div class="panel">${x.scored.length ? `<div class="ch-legend"><span><i></i>بنود التقييم (من ${MAX})${x.avg != null ? ` · <b class="num">${Math.round(x.avg)}%</b>` : ''}</span><span><i class="s2"></i>التسليمات اليومية (كل وحدة من ${DMAX})${x.dAvg != null ? ` · <b class="num">${Math.round(x.dAvg)}%</b>` : ''}</span></div><div class="chart-wrap" id="chart"></div>` : `<div class="empty"><p>الرسم البياني بيظهر بعد أول تقييم.</p></div>`}</div></div>`;
+  const att = `<div class="section"><div class="section-h"><h2>الحضور والغياب</h2></div>
+    <div class="panel" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+      ${attPills ? `<div class="row" style="gap:6px">${attPills}</div>` : '<div class="meta" style="color:var(--muted)">ما في أيام مسجلة بعد.</div>'}
+      ${x.ev.length ? `<div class="row" style="gap:6px">${x.ev.map(e => `<span class="pill ${ATT[e.att]?.c || 'muted'}" title="${esc(ATT[e.att]?.l)}${e.att === 'left' && e.leaveTime ? ' ' + esc(e.leaveTime) : ''}">${ATT[e.att]?.icon || ''} ${esc(shortDate(e.date))}</span>`).join('')}</div>` : ''}
+    </div></div>`;
+  const rd = reqDocs();
+  const reqDocsHTML = `<div class="section"><div class="section-h"><h2>الأوراق المطلوبة</h2><span class="meta num">سلّم ${x.docsDone} من ${rd.length}${x.docMax ? ` · المجموع ${fmtN(x.docScore)} من ${fmtN(x.docMax)}` : ''}</span><span class="spacer"></span><button class="link" data-act="settings">إضافة / تعديل الأوراق</button></div>
+    <div class="list">${rd.map((d, i) => { const v = docOf(s, d.name);
+      return `<div class="item" style="flex-wrap:wrap"><button class="check" data-act="toggle-doc:${i}" aria-pressed="${!!v}" aria-label="سلّم ${esc(d.name)}">${ICON.check}</button>
+      <span class="main" style="min-width:120px"><span class="name ltr" style="display:block;text-align:left">${esc(d.name)}</span><span class="meta">${v ? `سلّم ${esc(shortDate(v.date))}` : '<span style="color:var(--bad)">لم يُسلّم</span>'}</span></span>
+      <span class="row" style="gap:6px;flex-wrap:nowrap"><label for="ds-${i}" class="meta" style="color:var(--muted);font-size:13px">العلامة</label>
+      <input id="ds-${i}" class="search num" style="width:72px;text-align:center;padding:8px" type="number" inputmode="decimal" min="0" ${d.max ? `max="${d.max}"` : ''} step="0.5" value="${v && typeof v.score === 'number' ? v.score : ''}" data-change="docscore" data-i="${i}" placeholder="—">
+      <span class="num" style="color:var(--ink-2);font-weight:600">/ ${d.max ? fmtN(d.max) : '—'}</span></span></div>`; }).join('') || '<div class="empty"><p>ما في أوراق مطلوبة بعد. أضفها من الإعدادات مع علامة كل ورقة.</p><button class="btn primary" data-act="settings">إضافة الأوراق المطلوبة</button></div>'}</div></div>`;
+  // criteria averages
+  let crit = '';
+  if (x.scored.length) {
+    const avgs = ALL_CRIT.map(([id, t]) => { const v = x.scored.map(e => e.scores?.[id]).filter(n => typeof n === 'number'); return { id, t, a: v.length ? v.reduce((p, n) => p + n, 0) / v.length : null }; })
+      .filter(c => c.a != null).sort((a, b) => a.a - b.a);
+    crit = `<div class="section"><div class="section-h"><h2>المتوسط لكل بند</h2><span class="meta">من 5، الأضعف أولاً</span></div>
+      <div class="panel bars">${avgs.map(c => `<div class="bar-row" title="${esc(c.t)}: ${c.a.toFixed(1)}"><span class="lbl">${CRIT_NUM[c.id]}. ${esc(c.t)}</span>
+        <span class="bar-track"><span class="bar-fill ${c.a < 3 ? 'low' : ''}" style="width:${c.a / 5 * 100}%;display:block"></span></span><span class="num" style="font-weight:600">${c.a.toFixed(1)}</span></div>`).join('')}</div></div>`;
+  }
+  const hist = `<div class="section"><div class="section-h"><h2>سجل الأيام</h2><span class="meta">اضغط على يوم لتعدّله</span></div>
+    <div class="list">${x.ev.slice().reverse().map(e => {
+      const daily = set.dailyItems.map(d => { const v = dScore(e, d); return v == null ? '' : `<span class="pill ${v >= 8 ? 'good' : v >= 5 ? 'warn' : 'bad'} ltr">${esc(d)} <span class="num">${fmtN(v)}/${DMAX}</span></span>`; }).join(' ');
+      return `<button class="item" data-act="eval-open:${e.date}" style="align-items:flex-start"><span class="main">
+        <span class="row" style="gap:8px"><span class="name">${esc(longDate(e.date))}</span>${deptFor(e.sid, e.date) ? `<span class="pill muted">${esc(deptFor(e.sid, e.date))}</span>` : ''}<span class="pill ${ATT[e.att]?.c}">${ATT[e.att]?.l}</span>${pctOf(e) != null ? `<span class="num" style="font-weight:700">${Math.round(e.pct)}%</span><span class="meta num">${e.total}/${MAX}</span>` : ''}</span>
+        ${e.att === 'left' ? `<span class="hist-note num" style="display:block">غادر الساعة ${esc(fmtT(e.leaveTime || '00:00'))}${e.leaveReason ? ' · ' + esc(e.leaveReason) : ''}</span>` : ''}
+        ${isScored(e.att) ? `<span class="row" style="gap:6px;margin-top:6px">${daily}</span>` : ''}
+        ${e.note ? `<span class="hist-note" style="display:block">${esc(e.note)}</span>` : ''}</span></button>`;
+    }).join('') || '<div class="empty"><p>ما في تقييمات بعد.</p></div>'}</div></div>`;
+  const info = [s.bu && `الرقم الجامعي: <span class="num">${esc(s.bu)}</span>`, s.phone && `الهاتف: <span class="num ltr">${esc(s.phone)}</span>`].filter(Boolean).join(' · ');
+  return headerHTML(s.name, info, { back: true, extra: `<button class="icon-btn" data-act="edit-student" aria-label="تعديل بيانات الطالب" title="تعديل">${ICON.edit}</button>` }) +
+    `<div class="row" style="margin-block:14px"><button class="btn primary" style="flex:1" data-act="eval-open:${today()}">${evToday ? 'تعديل تقييم اليوم' : 'تقييم اليوم'}</button><button class="btn" data-act="export-student">${'تصدير Excel'}</button></div>
+    ${s.notes ? `<div class="note-box" style="margin-bottom:14px;white-space:pre-wrap">${esc(s.notes)}</div>` : ''}
+    ${stats}${chart}${att}${reqDocsHTML}${crit}${hist}
+    <div class="section"><button class="btn danger ${st.confirm === 'del-student' ? 'armed' : ''}" data-act="del-student">${st.confirm === 'del-student' ? 'اضغط مرة ثانية لحذف الطالب وكل تقييماته' : 'حذف الطالب'}</button></div>`;
+}
+
+/* ---------- Evaluation form ---------- */
+function evalView() {
+  const d = st.draft; const s = st.students[d.sid]; const set = st.settings;
+  const scored = isScored(d.att);
+  const vals = ALL_CRIT.map(([id]) => d.scores[id]).filter(v => typeof v === 'number'); const sum = vals.reduce((a, b) => a + b, 0); const missing = ALL_CRIT.length - vals.length;
+  const attHTML = `<div class="att">${Object.entries(ATT).map(([k, a]) => `<button class="${k}" data-act="att:${k}" aria-pressed="${d.att === k}">${a.l}</button>`).join('')}</div>`;
+  const dp = dailyPct(d);
+  const daily = `<div class="list">${set.dailyItems.map((it, i) => { const v = dScore(d, it); return `<div class="crit"><div class="t" style="font-weight:600">${esc(it)} <span style="color:var(--muted);font-weight:500">/ ${DMAX}</span></div>
+    <div class="scale dscale" role="group" aria-label="${esc(it)}"><button class="zero" data-act="dscore:${i}:0" aria-pressed="${v === 0}">0 ما سلّم</button>${Array.from({ length: DMAX }, (_, k) => k + 1).map(n => `<button data-act="dscore:${i}:${n}" aria-pressed="${v === n}">${n}</button>`).join('')}</div></div>`; }).join('')}</div>`;
+  const crit = CRITERIA.map(g => `<div class="crit-group"><h3>${g.g}</h3>${g.items.map(([id, t]) => `<div class="crit ${st.showMissing && !d.scores[id] ? 'missing' : ''}">
+      <div class="t"><b>${CRIT_NUM[id]}.</b>${esc(t)}</div>
+      <div class="scale" role="group" aria-label="${esc(t)}">${[1, 2, 3, 4, 5].map(v => `<button data-act="score:${id}:${v}" aria-pressed="${d.scores[id] === v}">${v}</button>`).join('')}</div></div>`).join('')}</div>`).join('');
+  return headerHTML(s.name, d.exists ? 'تعديل تقييم محفوظ' : 'تقييم جديد', { back: true }) +
+    `<div class="section" style="margin-top:14px"><div class="grid2"><div class="field"><label for="evdate">التاريخ</label><input id="evdate" type="date" value="${d.date}" data-change="evdate"></div></div>
+      <div class="field" style="margin-top:12px"><label>قسم الطالب بهاليوم</label><div class="wk">${(set.departments || []).map(dp => `<button class="chipday" data-act="sdept:${d.date}:${d.sid}:${esc(dp)}" aria-pressed="${deptFor(d.sid, d.date) === dp}">${esc(dp)}</button>`).join('')}</div></div></div>
+    <div class="section"><div class="section-h"><h2>الحضور</h2></div>${attHTML}
+    ${d.att === 'left' ? `<div class="grid2" style="margin-top:10px">
+      <div class="field"><label for="leaveTime">ساعة المغادرة</label><input id="leaveTime" type="time" value="${esc(d.leaveTime || '')}" data-change="leaveTime"></div>
+      <div class="field"><label for="leaveReason">السبب / الظرف</label><input id="leaveReason" dir="auto" value="${esc(d.leaveReason || '')}" data-bind="leaveReason" placeholder="مثلاً: ظرف عائلي، مرض…"></div></div>
+      ${d.leaveTime ? `<div class="meta num" style="margin-top:6px;font-size:13px;color:var(--ink-2)">داوم ${fmtH(Math.max(0, span(dayTimes(d.date).start, d.leaveTime)))} ساعة من ${fmtH(dayH(d.date) || defHours())}</div>` : ''}` : ''}</div>
+    ${scored ? `<div class="section"><div class="section-h"><h2>التسليمات اليومية</h2><span class="meta num">${dp ? `${fmtN(dp.sum)} / ${dp.max}` : 'كل تسليم من ' + DMAX}</span></div>${daily}</div>
+    <div class="section"><div class="section-h"><h2>بنود التقييم</h2><span class="spacer"></span>
+      <button class="btn small" data-act="fill:4">تعبئة الكل 4</button><button class="btn small" data-act="fill:5">الكل 5</button></div>
+      <div class="legend-scale"><span>1 Poor / Never</span><span>2 Fair / Rarely</span><span>3 Good / Sometimes</span><span>4 Very good / Most times</span><span>5 Excellent / Always</span></div>
+      <div class="list" style="margin-top:8px">${crit}</div></div>` : `<div class="note-box section">ما في تقييم بنود لأن الطالب ${d.att === 'absent' ? 'غائب' : 'غايب بعذر'}. بيتسجل اليوم بالحضور والغياب بس.</div>`}
+    <div class="section"><div class="field"><label for="evnote">ملاحظات</label><textarea id="evnote" data-bind="note" placeholder="ملاحظاتك عن أداء الطالب اليوم">${esc(d.note)}</textarea></div></div>
+    <div class="totalbar">
+      ${scored ? `<div><div class="score num">${sum}<small> / ${missing ? vals.length * 5 : MAX}</small> · ${vals.length ? Math.round(sum / (vals.length * 5) * 100) : 0}%</div>
+      <div style="font-size:12.5px;color:${missing ? 'var(--bad)' : 'var(--good)'}">${missing ? `باقي ${missing} بند بدون علامة` : 'كل البنود معبّاة'}</div></div>` : `<div class="score">${ATT[d.att].l}</div>`}
+      <span class="spacer"></span>
+      ${d.exists ? `<button class="btn danger ${st.confirm === 'del-eval' ? 'armed' : ''}" data-act="del-eval">${st.confirm === 'del-eval' ? 'تأكيد الحذف' : 'حذف'}</button>` : ''}
+      <button class="btn primary" data-act="save-eval">حفظ التقييم</button></div>`;
+}
+
+/* ---------- Settings ---------- */
+function listEditor(key, title, hint) {
+  const arr = st.settings[key];
+  return `<div class="section"><div class="section-h"><h2>${title}</h2><span class="meta">${hint}</span></div>
+    <div class="list">${arr.map((v, i) => `<div class="item"><span class="main ltr" style="text-align:left">${esc(v)}</span><button class="btn small danger" data-act="rm:${key}:${i}">حذف</button></div>`).join('')}
+    <div class="item"><input id="add-${key}" class="search" style="flex:1;min-width:0" placeholder="إضافة جديد"><button class="btn small primary" data-act="addto:${key}">إضافة</button></div></div></div>`;
+}
+function docsEditor() {
+  const rd = reqDocs(); const total = rd.reduce((a, d) => a + (Number(d.max) || 0), 0);
+  return `<div class="section"><div class="section-h"><h2>الأوراق المطلوبة بالفصل</h2><span class="meta num">${rd.length ? `مجموع العلامات ${fmtN(total)}` : 'بتظهر عند كل طالب'}</span></div>
+    <div class="list">${rd.map((d, i) => `<div class="item"><span class="main ltr" style="text-align:left;font-weight:600">${esc(d.name)}</span>
+      <label for="dm-${i}" class="meta" style="color:var(--muted);font-size:13px">من</label><input id="dm-${i}" class="search num" style="width:72px;text-align:center;padding:8px" type="number" inputmode="decimal" min="0" step="0.5" value="${d.max ?? ''}" data-change="docmax" data-i="${i}">
+      <button class="btn small danger" data-act="rm:requiredDocs:${i}">حذف</button></div>`).join('')}
+    <div class="item" style="flex-wrap:wrap"><input id="add-requiredDocs" class="search" style="flex:1;min-width:150px" placeholder="اسم الورقة، مثلاً Care Plan">
+      <input id="add-docmax" class="search num" style="width:90px;text-align:center" type="number" inputmode="decimal" min="0" step="0.5" placeholder="العلامة">
+      <button class="btn small primary" data-act="addto:requiredDocs">إضافة</button></div></div>
+    <p class="meta" style="font-size:12.5px;color:var(--muted);margin:6px 2px 0">حذف ورقة من هون بيشيلها من عند كل الطلاب.</p></div>`;
+}
+function settingsView() {
+  const s = st.settings; const armed = st.confirm === 'end-sem';
+  return headerHTML('الإعدادات', '', { back: true }) + `
+    <div class="section"><div class="section-h"><h2>معلومات الفصل</h2></div>
+      <div class="grid2">
+        <div class="field"><label for="st-instructor">اسم المدرّب السريري</label><input id="st-instructor" value="${esc(s.instructor)}" data-change="instructor"></div>
+        <div class="field"><label for="st-setting">مكان التدريب (القسم / المستشفى)</label><input id="st-setting" value="${esc(s.setting)}" data-change="setting"></div>
+        <div class="field"><label for="st-course">المساق</label><input id="st-course" value="${esc(s.course)}" data-change="course"></div>
+      </div></div>
+    ${docsEditor()}
+    ${listEditor('departments', 'أقسام المستشفى', 'بتختار منها لكل يوم دوام')}
+    ${listEditor('dailyItems', 'التسليمات اليومية', 'بتظهر بالتقييم اليومي')}
+    <div class="section"><div class="section-h"><h2>الحساب</h2></div>
+      <div class="panel" style="padding:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span class="ltr" style="flex:1;min-width:0;overflow-wrap:anywhere;color:var(--ink-2)">${esc(st.userEmail || '')}</span>
+        <button class="btn danger ${st.confirm === 'logout' ? 'armed' : ''}" data-act="logout">${st.confirm === 'logout' ? 'اضغط مرة ثانية لتسجيل الخروج' : 'تسجيل خروج'}</button></div></div>
+    <div class="section"><div class="section-h"><h2>إنهاء الفصل</h2></div>
+      <div class="panel" style="padding:14px;display:flex;flex-direction:column;gap:12px">
+        <p style="margin:0;color:var(--ink-2)">بيحذف كل الطلاب وتقييماتهم، وبيمسح علامات "شرحناه" وجدول الدوام والساعات. المواضيع والأدوية والإعدادات بتضل زي ما هي. صدّر ملف Excel قبل ما تحذف.</p>
+        <div class="row"><button class="btn" data-act="export-all">تصدير Excel أولاً</button>
+        <button class="btn danger ${armed ? 'armed' : ''}" data-act="end-sem">${armed ? 'اضغط مرة ثانية للتأكيد' : 'حذف طلاب الفصل والبدء من جديد'}</button></div>
+      </div></div>`;
+}
+
+/* ---------- Login ---------- */
+function loginView() {
+  const L = st.login;
+  return `<div style="max-width:420px;margin:0 auto;padding-block:48px 24px;display:flex;flex-direction:column;gap:16px">
+    <div style="text-align:center"><h1 style="font-size:24px">سجل التقييم السريري</h1><p style="color:var(--ink-2);margin:6px 0 0">${L.mode === 'signup' ? 'اعمل حساب جديد عشان تنحفظ بياناتك' : 'سجّل دخول عشان تشوف بيانات طلابك'}</p></div>
+    <form id="loginForm" class="panel" style="padding:18px;display:flex;flex-direction:column;gap:12px" novalidate>
+      <div class="field"><label for="lg-email">الإيميل</label><input id="lg-email" type="email" dir="ltr" autocomplete="email" value="${esc(L.email)}" required></div>
+      ${L.mode !== 'reset' ? `<div class="field"><label for="lg-pass">كلمة السر</label><input id="lg-pass" type="password" dir="ltr" autocomplete="${L.mode === 'signup' ? 'new-password' : 'current-password'}" required></div>` : ''}
+      ${L.msg ? `<div style="font-size:13.5px;color:${L.ok ? 'var(--good)' : 'var(--bad)'}">${esc(L.msg)}</div>` : ''}
+      <button type="submit" class="btn primary block" ${L.busy ? 'disabled' : ''}>${L.busy ? 'لحظة…' : L.mode === 'signup' ? 'إنشاء الحساب' : L.mode === 'reset' ? 'ابعث رابط تغيير كلمة السر' : 'دخول'}</button>
+    </form>
+    <div class="row" style="justify-content:center;gap:18px">
+      ${L.mode !== 'login' ? `<button class="link" data-act="lg-mode:login">عندي حساب، دخول</button>` : `<button class="link" data-act="lg-mode:signup">حساب جديد</button><button class="link" data-act="lg-mode:reset">نسيت كلمة السر</button>`}
+    </div></div>`;
+}
+const AUTH_ERR = {
+  'auth/invalid-email': 'الإيميل مش مكتوب صح.', 'auth/missing-password': 'اكتب كلمة السر.',
+  'auth/invalid-credential': 'الإيميل أو كلمة السر غلط.', 'auth/wrong-password': 'كلمة السر غلط.', 'auth/user-not-found': 'ما في حساب بهاد الإيميل.',
+  'auth/email-already-in-use': 'في حساب بهاد الإيميل، اعمل دخول.', 'auth/weak-password': 'كلمة السر لازم تكون 6 أحرف أو أكثر.',
+  'auth/too-many-requests': 'محاولات كثيرة، استنى شوي وجرّب.', 'auth/network-request-failed': 'ما في إنترنت.',
+  'auth/operation-not-allowed': 'الدخول بالإيميل مش مفعّل بمشروع Firebase (Authentication > Sign-in method > Email/Password).',
+};
+async function doLogin(ev) {
+  ev.preventDefault(); const L = st.login; if (L.busy) return;
+  L.email = document.getElementById('lg-email').value.trim(); const pass = document.getElementById('lg-pass')?.value || '';
+  L.busy = true; L.msg = ''; render();
+  try {
+    const A = firebase.auth();
+    if (L.mode === 'signup') await A.createUserWithEmailAndPassword(L.email, pass);
+    else if (L.mode === 'reset') { await A.sendPasswordResetEmail(L.email); L.ok = true; L.msg = 'بعتنالك رابط على الإيميل، افتحه وغيّر كلمة السر.'; L.mode = 'login'; }
+    else await A.signInWithEmailAndPassword(L.email, pass);
+  } catch (e) { L.ok = false; L.msg = AUTH_ERR[e.code] || ('صار خطأ: ' + (e.code || e.message)); }
+  L.busy = false; render();
+}
+document.addEventListener('submit', ev => { if (ev.target.id === 'loginForm') doLogin(ev); });
+
+/* ---------- Chart ---------- */
+function drawChart() {
+  const host = document.getElementById('chart'); if (!host) return;
+  const pts = evalsOf(st.sid).filter(e => pctOf(e) != null).map(e => ({ ...e, dp: dailyPct(e) }));
+  const W = Math.max(280, host.clientWidth - 16), H = 230, m = { l: 38, r: 30, t: 20, b: 28 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const x = i => m.l + (pts.length === 1 ? iw / 2 : i * iw / (pts.length - 1));
+  const y = v => m.t + ih - v / 100 * ih;
+  let g = '';
+  [0, 25, 50, 75, 100].forEach(v => { g += `<line class="ch-grid" x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"/><text class="ch-axis" x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${v}%</text>`; });
+  const step = Math.max(1, Math.ceil(pts.length / 6));
+  pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) g += `<text class="ch-axis" x="${x(i)}" y="${H - 8}" text-anchor="middle">${shortDate(p.date)}</text>`; });
+  const series = [
+    { cls: '', vals: pts.map((p, i) => [i, p.pct]) },
+    { cls: 's2', vals: pts.map((p, i) => p.dp ? [i, p.dp.pct] : null).filter(Boolean) },
+  ];
+  let body = '';
+  const s1 = series[0].vals; const line1 = s1.map(([i, v], k) => `${k ? 'L' : 'M'}${x(i)},${y(v)}`).join('');
+  if (s1.length > 1) body += `<path class="ch-area" d="${line1}L${x(s1[s1.length - 1][0])},${y(0)}L${x(s1[0][0])},${y(0)}Z"/>`;
+  const ends = [];
+  series.forEach(sr => {
+    if (!sr.vals.length) return;
+    const d = sr.vals.map(([i, v], k) => `${k ? 'L' : 'M'}${x(i)},${y(v)}`).join('');
+    body += `<path class="ch-line ${sr.cls}" d="${d}"/>`;
+    body += sr.vals.map(([i, v], k) => `<circle class="ch-dot ${sr.cls}" cx="${x(i)}" cy="${y(v)}" r="${k === sr.vals.length - 1 ? 5.5 : 4}"/>`).join('');
+    const [li, lv] = sr.vals[sr.vals.length - 1]; ends.push({ cls: sr.cls, i: li, v: lv });
+  });
+  // end labels, nudged apart when they collide
+  if (ends.length === 2 && ends[0].i === ends[1].i && Math.abs(y(ends[0].v) - y(ends[1].v)) < 16) {
+    const up = ends[0].v >= ends[1].v ? 0 : 1; ends[up].dy = -10; ends[1 - up].dy = 18;
+  }
+  ends.forEach(e => { const dy = e.dy ?? -10; body += `<text class="ch-end ${e.cls}" x="${Math.min(x(e.i) + (pts.length === 1 ? 0 : 4), W - 2)}" y="${Math.max(12, y(e.v) + dy)}" text-anchor="${pts.length === 1 ? 'middle' : 'end'}">${Math.round(e.v)}%</text>`; });
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="تطور التقييم اليومي والتسليمات">${g}${body}<line id="cross" class="ch-cross" y1="${m.t}" y2="${m.t + ih}" visibility="hidden"/><rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/></svg><div class="tip" hidden></div>`;
+  const svg = host.querySelector('svg'), tip = host.querySelector('.tip'), cross = host.querySelector('#cross');
+  const move = ev => {
+    const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) * W / r.width;
+    let bi = 0, bd = Infinity; pts.forEach((p, i) => { const dd = Math.abs(x(i) - px); if (dd < bd) { bd = dd; bi = i; } });
+    const p = pts[bi]; cross.setAttribute('x1', x(bi)); cross.setAttribute('x2', x(bi)); cross.setAttribute('visibility', 'visible');
+    tip.hidden = false; tip.innerHTML = `${esc(longDate(p.date))} · ${ATT[p.att].l}${p.att === 'left' && p.leaveTime ? ' ' + esc(fmtT(p.leaveTime)) : ''}<br>البنود: <b class="num">${Math.round(p.pct)}%</b> <span class="num">(${p.total}/${MAX})</span>` +
+      (p.dp ? `<br>التسليمات: <b class="num">${Math.round(p.dp.pct)}%</b> <span class="num">(${fmtN(p.dp.sum)}/${p.dp.max})</span>` : '');
+    tip.style.left = (svg.offsetLeft + x(bi) * r.width / W) + 'px'; tip.style.top = (svg.offsetTop + y(Math.max(p.pct, p.dp?.pct ?? 0)) * r.height / H - 6) + 'px';
+  };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+}
+
+/* ---------- Sheets (add/edit forms) ---------- */
+let sheetCtx = null;
+function openSheet(kind, id) {
+  sheetCtx = { kind, id };
+  let title, fields, obj = {};
+  if (kind === 'student') { obj = id ? st.students[id] : {}; title = id ? 'تعديل بيانات الطالب' : 'طالب جديد';
+    fields = [['name', 'اسم الطالب', 'text', true], ['bu', 'الرقم الجامعي (BU#)', 'text'], ['phone', 'رقم الهاتف', 'tel'], ['notes', 'معلومات إضافية', 'textarea']]; }
+  else if (kind === 'topics') { obj = id ? st.topics[id] : {}; title = id ? 'تعديل الموضوع' : 'موضوع جديد';
+    fields = [['title', 'اسم الموضوع', 'text', true], ['link', 'رابط الملف على Google Drive (اختياري)', 'url']]; }
+  else { obj = id ? st.drugs[id] : {}; title = id ? 'تعديل الدواء' : 'دواء جديد';
+    fields = DRUG_FIELDS.map(([k, l, t], i) => [k, l, t, i === 0]); }
+  const del = id && kind !== 'student' ? `<button type="button" class="btn danger" data-act="sheet-del" id="sheetdel">حذف</button>` : '';
+  $('#sheetHost').innerHTML = `<div class="scrim" data-act="sheet-close"><form class="sheet" id="sheetForm" novalidate>
+    <h2>${title}</h2>
+    ${fields.map(([k, l, t, req]) => `<div class="field"><label for="f-${k}">${l}${req ? ' *' : ''}</label>${t === 'textarea' ? `<textarea id="f-${k}" rows="3" dir="auto">${esc(obj[k])}</textarea>` : `<input id="f-${k}" type="${t}" dir="auto" value="${esc(obj[k])}" ${req ? 'required' : ''}>`}</div>`).join('')}
+    <div class="row">${del}<span class="spacer"></span><button type="button" class="btn" data-act="sheet-close">إلغاء</button><button type="submit" class="btn primary">حفظ</button></div>
+  </form></div>`;
+  setTimeout(() => { const f = document.getElementById('f-' + fields[0][0]); f && f.focus(); }, 30);
+  $('#sheetForm').addEventListener('submit', ev => { ev.preventDefault(); saveSheet(fields); });
+}
+function closeSheet() { $('#sheetHost').innerHTML = ''; sheetCtx = null; }
+function saveSheet(fields) {
+  const { kind, id } = sheetCtx; const vals = {};
+  fields.forEach(([k]) => vals[k] = document.getElementById('f-' + k).value.trim());
+  const req = fields.find(f => f[3]); if (!vals[req[0]]) { toast('اكتب ' + req[1] + ' أولاً'); return; }
+  if (vals.link && !/^https:\/\//i.test(vals.link)) { toast('الرابط لازم يبلش بـ https://'); return; }
+  if (kind === 'student') {
+    const nid = id || uid('s'); const prev = st.students[nid] || { docs: {}, createdAt: Date.now() };
+    const data = { ...prev, ...vals }; delete data.id;
+    write(refs.students.doc(nid), data);
+    toast(id ? 'تم حفظ التعديل' : 'تمت إضافة الطالب');
+  } else {
+    const col = kind === 'topics' ? refs.topics : refs.drugs; const map = kind === 'topics' ? st.topics : st.drugs;
+    const nid = id || uid(kind[0]); const prev = map[nid] || { done: false, doneDate: null };
+    const data = { ...prev, ...vals }; delete data.id;
+    write(col.doc(nid), data); toast('تم الحفظ');
+  }
+  closeSheet();
+}
+
+/* ---------- Evaluation draft ---------- */
+function loadDraft(sid, date) {
+  const e = st.evals[sid + '_' + date];
+  st.draft = e ? { sid, date, att: e.att, scores: { ...(e.scores || {}) }, daily: Object.fromEntries((st.settings.dailyItems || []).map(it => [it, dScore(e, it)]).filter(([, v]) => v != null)), note: e.note || '', leaveTime: e.leaveTime || '', leaveReason: e.leaveReason || '', dailyMax: DMAX, exists: true }
+    : { sid, date, att: 'present', scores: {}, daily: {}, note: '', dailyMax: DMAX, exists: false };
+  st.showMissing = false; st.confirm = null;
+}
+function saveEval() {
+  const d = st.draft; const scored = isScored(d.att);
+  const vals = ALL_CRIT.map(([id]) => d.scores[id]).filter(v => typeof v === 'number');
+  const cleanScores = Object.fromEntries(ALL_CRIT.filter(([id]) => typeof d.scores[id] === 'number').map(([id]) => [id, d.scores[id]]));
+  if (scored && vals.length < ALL_CRIT.length) { st.showMissing = true; render(); toast(`باقي ${ALL_CRIT.length - vals.length} بند بدون علامة (معلّمين بالأحمر)`); return; }
+  const total = vals.reduce((a, b) => a + b, 0);
+  if (d.att === 'left' && !d.leaveTime) { toast('حدد ساعة المغادرة'); document.getElementById('leaveTime')?.focus(); return; }
+  const data = { sid: d.sid, date: d.date, att: d.att, note: d.note, updatedAt: Date.now(),
+    leaveTime: d.att === 'left' ? d.leaveTime : null, leaveReason: d.att === 'left' ? (d.leaveReason || '').trim() : null,
+    scores: scored ? cleanScores : {}, daily: scored ? d.daily : {}, total: scored ? total : null, pct: scored ? total / MAX * 100 : null,
+    dailyMax: DMAX, dailyPct: scored && dailyPct(d) ? dailyPct(d).pct : null };
+  write(refs.evals.doc(d.sid + '_' + d.date), data);
+  toast('تم حفظ تقييم ' + longDate(d.date));
+  st.view = 'student'; st.draft = null; render(); window.scrollTo(0, 0);
+}
+
+/* ---------- Excel ---------- */
+function sheetOf(rows, widths) {
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = widths.map(w => ({ wch: w })); return ws;
+}
+function evalRows(sids) {
+  const set = st.settings;
+  const head = ['اسم الطالب', 'الرقم الجامعي', 'التاريخ', 'اليوم', 'القسم', 'الحضور', 'ساعة المغادرة', 'سبب المغادرة', ...set.dailyItems.map(d => `${d} (من ${DMAX})`), ...ALL_CRIT.map(([id, t]) => `${CRIT_NUM[id]}. ${t}`), `المجموع (من ${MAX})`, 'النسبة %', 'ملاحظات'];
+  const rows = [head];
+  sids.forEach(sid => { const s = st.students[sid]; evalsOf(sid).forEach(e => { const sc = isScored(e.att);
+    rows.push([s.name, s.bu || '', e.date, dayName(e.date), deptFor(sid, e.date), ATT[e.att]?.l || '', e.att === 'left' ? (e.leaveTime || '') : '', e.att === 'left' ? (e.leaveReason || '') : '', ...set.dailyItems.map(d => sc ? (dScore(e, d) ?? '') : ''),
+      ...ALL_CRIT.map(([id]) => sc ? (e.scores?.[id] ?? '') : ''), sc ? e.total : '', sc ? Math.round(e.pct * 10) / 10 : '', e.note || '']); }); });
+  return sheetOf(rows, [22, 12, 11, 9, 8, 14, 11, 22, ...set.dailyItems.map(() => 14), ...ALL_CRIT.map(() => 8), 12, 9, 40]);
+}
+function summaryRows(sids) {
+  const set = st.settings;
+  const rd = reqDocs();
+  const head = ['اسم الطالب', 'الرقم الجامعي', 'الهاتف', 'أيام مسجلة', 'حاضر', 'متأخر', 'غادر أثناء الدوام', 'غائب', 'غياب بعذر', 'متوسط التقييم %', 'متوسط التسليمات اليومية %', ...rd.map(d => d.max ? `${d.name} (من ${fmtN(d.max)})` : d.name), 'مجموع علامات الأوراق', 'معلومات إضافية'];
+  const rows = [head];
+  sids.forEach(sid => { const s = st.students[sid]; const x = studentStats(sid);
+    rows.push([s.name, s.bu || '', s.phone || '', x.ev.length, x.cnt.present, x.cnt.late, x.cnt.left, x.cnt.absent, x.cnt.excused, x.avg != null ? Math.round(x.avg * 10) / 10 : '', x.dAvg != null ? Math.round(x.dAvg * 10) / 10 : '',
+      ...rd.map(d => { const v = docOf(s, d.name); return !v ? 'لم يسلّم' : typeof v.score === 'number' ? v.score : 'سلّم بدون علامة'; }),
+      x.docMax ? `${fmtN(x.docScore)} / ${fmtN(x.docMax)}` : (x.docGraded ? fmtN(x.docScore) : ''), s.notes || '']); });
+  return sheetOf(rows, [22, 12, 13, 10, 7, 7, 14, 7, 9, 13, 18, ...rd.map(() => 16), 18, 30]);
+}
+function libRows(map, drug) {
+  const rows = [[drug ? 'اسم الدواء' : 'الموضوع', 'شرحناه', 'تاريخ الشرح']];
+  Object.values(map).sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ar')).forEach(i => rows.push([i.title, i.done ? 'نعم' : 'لا', i.doneDate || '']));
+  return sheetOf(rows, [30, 8, 12]);
+}
+function calRows() {
+  const cs = calSummary(); const { sched, evd } = cs; const rows = [['الأسبوع', 'التاريخ', 'اليوم', 'القسم', 'الحالة', 'من', 'إلى', 'الساعات', 'عدد التقييمات', 'ملاحظة']];
+  sched.forEach(d => { const s = dayStatus(d, sched, evd); const tm = dayTimes(d); const c = s === 'cancelled';
+    rows.push([weekOf(d), d, dayName(d), c ? '' : Object.entries(deptCounts(d)).map(([k, v]) => Object.keys(st.students).length ? `${k} (${v})` : k).join('، ') || deptOf(d), ({ done: 'داومنا', upcoming: 'قادم', today: 'اليوم', cancelled: 'ملغى' })[s] || '', c ? '' : tm.start, c ? '' : tm.end, Math.round(dayH(d) * 100) / 100, evd[d] || 0, c ? ((st.settings.cancelNotes || {})[d] || '') : '']); });
+  rows.push([]); rows.push(['المطلوب بالفصل', '', '', '', '', '', '', Math.round(cs.reqH * 100) / 100]);
+  rows.push(['المجدول', '', '', '', '', '', '', Math.round(cs.planH * 100) / 100]); rows.push(['داومنا', '', '', '', '', '', '', Math.round(cs.doneH * 100) / 100]);
+  rows.push(['أيام داومناها فعلياً', '', '', '', '', '', '', cs.done]); rows.push(['بالساعات بتعادل (يوم)', '', '', '', '', '', '', Math.round(eqDays(cs.doneH) * 10) / 10]);
+  if (cs.gapH > 0.01) rows.push(['ناقص لازم يتعوض', '', '', '', '', '', '', Math.round(cs.gapH * 100) / 100]);
+  return sheetOf(rows, [16, 12, 10, 8, 10, 8, 8, 9, 13, 30]);
+}
+async function exportXlsx(sids, fname, withLib) {
+  if (typeof XLSX === 'undefined') { toast('مكتبة Excel ما تحمّلت. حدّث الصفحة وجرّب مرة ثانية.'); return; }
+  const wb = XLSX.utils.book_new(); wb.Workbook = { Views: [{ RTL: true }] };
+  XLSX.utils.book_append_sheet(wb, summaryRows(sids), 'ملخص الطلاب');
+  XLSX.utils.book_append_sheet(wb, evalRows(sids), 'التقييم اليومي');
+  if (withLib) {
+    XLSX.utils.book_append_sheet(wb, calRows(), 'أيام الدوام');
+    XLSX.utils.book_append_sheet(wb, libRows(st.topics, false), 'المواضيع');
+    XLSX.utils.book_append_sheet(wb, libRows(st.drugs, true), 'الأدوية');
+  }
+  try { XLSX.writeFile(wb, fname, { compression: true }); toast('تم تنزيل الملف'); }
+  catch (e) { console.error(e); toast('ما قدرنا ننزّل الملف'); }
+}
+
+/* ---------- Events ---------- */
+function arm(key) { st.confirm = key; render(); clearTimeout(arm.t); arm.t = setTimeout(() => { if (st.confirm === key) { st.confirm = null; render(); } }, 4000); }
+document.addEventListener('click', async ev => {
+  const el = ev.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act; const [a, b, c] = act.split(':');
+  if (a === 'sheet-close') { if (el.classList.contains('scrim') && ev.target !== el) return; closeSheet(); return; }
+  if (a === 'sheet-del') { ev.preventDefault(); const { kind, id } = sheetCtx; if (st.confirm !== 'sheetdel') { st.confirm = 'sheetdel'; el.textContent = 'تأكيد الحذف'; el.classList.add('armed'); return; }
+    write((kind === 'topics' ? refs.topics : refs.drugs).doc(id), null); st.confirm = null; closeSheet(); toast('تم الحذف'); return; }
+  switch (a) {
+    case 'lg-mode': st.login.mode = b; st.login.msg = ''; render(); break;
+    case 'logout':
+      if (st.confirm !== 'logout') { arm('logout'); break; }
+      st.confirm = null; await firebase.auth().signOut(); location.reload(); break;
+    case 'tab': if (st.tab !== b) { clearTimeout(histT); if (st.libQ.trim() && (st.tab === 'topics' || st.tab === 'drugs')) addHistory(st.tab, st.libQ); st.libQ = ''; } st.tab = b; render(); break;
+    case 'back':
+      if (st.view === 'eval') { st.view = 'student'; st.draft = null; } else { st.view = 'home'; st.sid = null; }
+      st.confirm = null; render(); window.scrollTo(0, 0); break;
+    case 'settings': st.view = 'settings'; st.confirm = null; render(); window.scrollTo(0, 0); break;
+    case 'open-student': st.sid = b; st.view = 'student'; st.confirm = null; render(); window.scrollTo(0, 0); break;
+    case 'add-student': openSheet('student'); break;
+    case 'edit-student': openSheet('student', st.sid); break;
+    case 'add-topics': case 'add-drugs': openSheet(a.slice(4)); break;
+    case 'edit-topics': case 'edit-drugs': openSheet(a.slice(5), b); break;
+    case 'expand': st.open.has(b) ? st.open.delete(b) : st.open.add(b); render(); break;
+    case 'toggle-lib': { const map = b === 'topics' ? st.topics : st.drugs; const col = b === 'topics' ? refs.topics : refs.drugs; const it = map[c]; if (!it) break;
+      const data = { ...it, done: !it.done, doneDate: !it.done ? today() : null }; delete data.id; write(col.doc(c), data); break; }
+    case 'toggle-doc': { const s = st.students[st.sid]; const name = reqDocs()[Number(b)]?.name; if (!name) break; const docs = { ...(s.docs || {}) };
+      if (docs[name]) delete docs[name]; else docs[name] = { date: today(), score: null }; const data = { ...s, docs }; delete data.id; write(refs.students.doc(s.id), data); break; }
+    case 'del-student': {
+      if (st.confirm !== 'del-student') { arm('del-student'); break; }
+      const sid = st.sid; evalsOf(sid).forEach(e => write(refs.evals.doc(e.id), null)); write(refs.students.doc(sid), null);
+      st.view = 'home'; st.sid = null; st.confirm = null; render(); toast('تم حذف الطالب'); break; }
+    case 'eval-open': loadDraft(st.sid, b); st.view = 'eval'; render(); window.scrollTo(0, 0); break;
+    case 'att': st.draft.att = b; render(); break;
+    case 'dscore': { const it = st.settings.dailyItems[Number(b)]; if (it == null) break; st.draft.daily[it] = st.draft.daily[it] === Number(c) ? null : Number(c); if (st.draft.daily[it] == null) delete st.draft.daily[it]; render(); break; }
+    case 'score': st.draft.scores[b] = Number(c); render(); break;
+    case 'fill': ALL_CRIT.forEach(([id]) => st.draft.scores[id] = Number(b)); render(); break;
+    case 'save-eval': saveEval(); break;
+    case 'del-eval':
+      if (st.confirm !== 'del-eval') { arm('del-eval'); break; }
+      write(refs.evals.doc(st.draft.sid + '_' + st.draft.date), null); st.view = 'student'; st.draft = null; st.confirm = null; render(); toast('تم حذف التقييم'); break;
+    case 'export-all': exportXlsx(Object.keys(st.students).sort((x, y) => (st.students[x].name || '').localeCompare(st.students[y].name || '', 'ar')), `clinical-evaluation-${today()}.xlsx`, true); break;
+    case 'export-student': { const s = st.students[st.sid]; exportXlsx([st.sid], `${(s.bu || s.name || 'student').replace(/[\\/:*?"<>|]/g, '')}-evaluation-${today()}.xlsx`, false); break; }
+    case 'rm': { const arr = (b === 'requiredDocs' ? reqDocs() : st.settings[b]).slice(); arr.splice(Number(c), 1); saveSettings({ [b]: arr }); break; }
+    case 'addto': { const inp = document.getElementById('add-' + b); const v = inp.value.trim(); if (!v) { toast('اكتب الاسم أولاً'); break; }
+      if (b === 'requiredDocs') { const rd = reqDocs(); if (rd.some(d => d.name === v)) { toast('موجودة من قبل'); break; }
+        const mx = document.getElementById('add-docmax'); const m = parseFloat(mx.value); inp.value = ''; mx.value = '';
+        saveSettings({ requiredDocs: [...rd, { name: v, max: isFinite(m) && m > 0 ? m : null }] }); break; }
+      if (st.settings[b].includes(v)) { toast('موجود من قبل'); break; } inp.value = ''; saveSettings({ [b]: [...st.settings[b], v] }); break; }
+    case 'dow': { const n = Number(b); const cur = st.settings.clinicalDays || []; saveSettings({ clinicalDays: cur.includes(n) ? cur.filter(x => x !== n) : [...cur, n] }); break; }
+    case 'hist': { const t = (st.settings.searchHistory?.[b] || [])[Number(c)]; if (t == null) break; st.libQ = st.libQ.trim() === t ? '' : t; render(); break; }
+    case 'hist-clear': saveSettings({ searchHistory: { ...(st.settings.searchHistory || {}), [b]: [] } }); break;
+    case 'day-reset': { const dh = { ...(st.settings.dayHours || {}) }; delete dh[b]; saveSettings({ dayHours: dh }); break; }
+    case 'day-long': { const dh = { ...(st.settings.dayHours || {}) }; dh[b] = { start: dayTimes(b).start, end: '19:00' }; saveSettings({ dayHours: dh }); break; }
+    case 'dept': { const dp = act.slice(('dept:' + b + ':').length); const m = { ...(st.settings.dayDept || {}) }; if (m[b] === dp) delete m[b]; else m[b] = dp; saveSettings({ dayDept: m }); break; }
+    case 'dist': st.distOpen = st.distOpen === b ? null : b; render(); break;
+    case 'sdept': { const pre = 'sdept:' + b + ':' + c + ':'; const dp = act.slice(pre.length); setStudentDept(b, c, deptFor(c, b) === dp ? '' : dp); break; }
+    case 'cal': st.calSel = st.calSel === b ? null : b; render(); break;
+    case 'cal-cancel': { const cur = st.settings.cancelled || []; const on = !cur.includes(b); saveSettings({ cancelled: on ? [...cur, b] : cur.filter(x => x !== b) });
+      if (on) setTimeout(() => document.getElementById('cancelNote')?.focus(), 50); break; }
+    case 'cal-extra': { const cur = st.settings.extraDays || []; saveSettings({ extraDays: cur.includes(b) ? cur.filter(x => x !== b) : [...cur, b] }); break; }
+    case 'end-sem': {
+      if (st.confirm !== 'end-sem') { arm('end-sem'); break; }
+      st.confirm = null; toast('جارٍ حذف بيانات الفصل…');
+      const jobs = [];
+      Object.keys(st.evals).forEach(id => jobs.push(write(refs.evals.doc(id), null)));
+      Object.keys(st.students).forEach(id => jobs.push(write(refs.students.doc(id), null)));
+      [[st.topics, refs.topics], [st.drugs, refs.drugs]].forEach(([map, col]) => Object.values(map).filter(i => i.done).forEach(i => { const d = { ...i, done: false, doneDate: null }; delete d.id; jobs.push(write(col.doc(i.id), d)); }));
+      jobs.push(saveSettings({ cancelled: [], extraDays: [], dayHours: {}, cancelNotes: {}, dayDept: {}, deptAssign: {}, semStart: '' }));
+      await Promise.allSettled(jobs); st.view = 'home'; st.tab = 'students'; render(); toast('بلّشنا فصل جديد'); break; }
+  }
+});
+document.addEventListener('input', ev => {
+  const k = ev.target.dataset.bind; if (!k) return;
+  if (k === 'note') { st.draft.note = ev.target.value; return; }
+  if (k === 'leaveReason') { st.draft.leaveReason = ev.target.value; return; }
+  st[k] = ev.target.value; render();
+  if (k === 'libQ') { clearTimeout(histT); const kind = st.tab; histT = setTimeout(() => addHistory(kind, st.libQ), 1500); }
+});
+document.addEventListener('change', ev => {
+  const k = ev.target.dataset.change; if (!k) return; const v = ev.target.value;
+  if (k === 'leaveTime') { st.draft.leaveTime = v; render(); return; }
+  if (k === 'evdate') { if (!v) return; const note = st.draft.note; loadDraft(st.draft.sid, v); if (!st.draft.exists) st.draft.note = note; render(); return; }
+  if (k === 'docmax') { const rd = reqDocs().map(d => ({ ...d })); const i = Number(ev.target.dataset.i); const m = parseFloat(v); rd[i].max = isFinite(m) && m > 0 ? m : null; saveSettings({ requiredDocs: rd }); return; }
+  if (k === 'docscore') { const d = reqDocs()[Number(ev.target.dataset.i)]; const s = st.students[st.sid]; if (!d || !s) return;
+    const docs = { ...(s.docs || {}) }; const prev = docOf(s, d.name);
+    if (v === '') { if (prev) docs[d.name] = { ...prev, score: null }; }
+    else { const n = parseFloat(v); if (!isFinite(n) || n < 0) { toast('اكتب علامة صحيحة'); render(); return; }
+      if (d.max && n > d.max) { toast(`العلامة أكبر من ${fmtN(d.max)}`); render(); return; }
+      docs[d.name] = { date: prev?.date || today(), score: n }; }
+    const data = { ...s, docs }; delete data.id; write(refs.students.doc(s.id), data); return; }
+  if (k === 'dayStart' || k === 'dayEnd') { if (!v) return; const d = ev.target.dataset.d; const cur = dayTimes(d); const dh = { ...(st.settings.dayHours || {}) };
+    const nx = { start: k === 'dayStart' ? v : cur.start, end: k === 'dayEnd' ? v : cur.end };
+    if (nx.start === st.settings.shiftStart && nx.end === st.settings.shiftEnd) delete dh[d]; else dh[d] = nx; saveSettings({ dayHours: dh }); return; }
+  if (k === 'cancelNote') { const cn = { ...(st.settings.cancelNotes || {}) }; const t = v.trim(); if (t) cn[ev.target.dataset.d] = t; else delete cn[ev.target.dataset.d]; saveSettings({ cancelNotes: cn }); return; }
+  if (k === 'weeks') { const n = Math.max(1, Math.min(30, parseInt(v, 10) || 18)); saveSettings({ weeks: n }); return; }
+  saveSettings({ [k]: v.trim() });
+});
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && sheetCtx) closeSheet();
+  if (ev.key === 'Enter' && ev.target.id && ev.target.id.startsWith('add-')) { ev.preventDefault(); const k = ev.target.id === 'add-docmax' ? 'requiredDocs' : ev.target.id.slice(4); document.querySelector(`[data-act="addto:${k}"]`)?.click(); }
+  if (ev.key === 'Enter' && ev.target.dataset && ev.target.dataset.change && ev.target.tagName === 'INPUT') ev.target.blur();
+});
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawChart, 150); });
+
+/* ---------- Boot ---------- */
+render();
+(function boot() {
+  if (typeof firebase === 'undefined') { st.err = 'ما قدرنا نحمّل Firebase. تأكد من الإنترنت وحدّث الصفحة.'; render(); return; }
+  if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey.startsWith('PASTE')) { st.err = 'لازم تحط إعدادات Firebase تبعتك بأول ملف index.html (FIREBASE_CONFIG).'; render(); return; }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const fs = firebase.firestore();
+  try { fs.settings({ ignoreUndefinedProperties: true, merge: true }); } catch (_) {}
+  fs.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  let unsubs = [];
+  firebase.auth().onAuthStateChanged(u => {
+    unsubs.forEach(f => f()); unsubs = [];
+    if (!u) { st.needLogin = true; st.ready = false; render(); return; }
+    st.needLogin = false; st.userEmail = u.email || ''; st.ready = false; render();
+    const root = fs.doc(`users/${u.uid}`);
+    refs = { root, students: root.collection('students'), evals: root.collection('evals'), topics: root.collection('topics'), drugs: root.collection('drugs') };
+    const seen = new Set(); const mark = k => { if (!seen.has(k)) { seen.add(k); if (seen.size === 5) st.ready = true; } };
+    let raf; const later = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
+    const onErr = e => { console.error(e); st.err = e && e.code === 'permission-denied' ? 'Firebase رفض الوصول. تأكد من قواعد Firestore (Rules) زي ما بالتعليمات.' : 'صار خطأ بالاتصال بـ Firebase: ' + (e.code || e.message); later(); };
+    unsubs.push(root.onSnapshot(sn => { st.settings = { ...DEFAULT_SETTINGS, ...(sn.exists ? sn.data() : {}) }; mark('root'); later(); }, onErr));
+    const sub = (key, col) => unsubs.push(col.onSnapshot(sn => { st[key] = Object.fromEntries(sn.docs.map(d => [d.id, { ...d.data(), id: d.id }])); mark(key); later(); }, onErr));
+    sub('students', refs.students); sub('evals', refs.evals); sub('topics', refs.topics); sub('drugs', refs.drugs);
+  });
+})();
+</script>
+</body>
+</html>
